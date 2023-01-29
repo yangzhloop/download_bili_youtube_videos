@@ -1,0 +1,131 @@
+##To download videos from youtube and bilibili using reference link from the excel sheet 'CN list.xlsx' and 'EN list.xlsx'
+
+#libs needed
+import os
+import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
+
+#for downloading youtube videos
+##!pip install pytube
+import pytube 
+
+#for downloading bilibili videos
+import requests
+##!pip install bs4
+from bs4 import BeautifulSoup 
+
+
+#create folders for both CN/EN singing videos to be store
+def init_data_folders():
+ 
+    path = 'data_raw'
+    #create main folder 'data_raw'
+    try:
+        os.makedirs(path)
+    except FileExistsError:
+        pass
+    #create sub-folder 'CN_rawdata'
+    try:
+        os.makedirs(path+'/CN_rawdata')
+    except FileExistsError:
+        pass
+    #create another sub-folder 'EN_rawdata'
+    try:
+        os.makedirs(path+'/EN_rawdata')
+    except FileExistsError:
+        pass
+    
+    #return the list contains the paths for the sub-folders
+    list = [path+'/CN_rawdata',path+'/EN_rawdata']
+    return list 
+ 
+#create song folder under CN/EN sub-folders to store for each song downloading
+def create_folder(Folder_path,Song_title,Artist):
+
+    folder_name = Song_title+'_'+Artist
+    folder_name_path=Folder_path+'/'+folder_name
+    #create the folder
+    try:
+        os.makedirs(folder_name_path)
+    except FileExistsError:
+        pass
+    
+    #return the name and the path of the folder created for the storage of the song
+    return folder_name, folder_name_path
+ 
+#To download the videos using Reference link, store in Folder_name_path
+def download_video(Reference_link,Folder_name,Folder_name_path):
+    #to be continue
+    pass
+
+    bilibili = 'https://www.bilibili.com'
+    youtube = 'https://www.youtube.com'
+
+    if bilibili in Reference_link:
+        download_bilibili(Reference_link=Reference_link, Folder_name= Folder_name, Folder_name_path= Folder_name_path)
+
+    elif youtube in Reference_link:
+        download_youtube(Reference_link=Reference_link, Folder_name= Folder_name, Folder_name_path= Folder_name_path)
+    else:
+        print('The url is not supported')
+
+
+def download_bilibili(Reference_link, Folder_name, Folder_name_path):
+    pass
+
+def download_youtube(Reference_link, Folder_name, Folder_name_path):
+    yt= pytube.YouTube(Reference_link)
+    #downlaod video in mp4 format
+    stream_mp4 = yt.streams.get_highest_resolution()
+    #stream_mp4.download(filename=Folder_name+'.mp4', output_path= Folder_name_path)
+
+    #download video in flv format
+    stream_flv= yt.streams.filter(adaptive= True).first()
+    stream_flv.download(filename=Folder_name+'.flv', output_path= Folder_name_path)
+
+    #download audio in mp3 format
+    stream_audio = yt.streams.get_audio_only()
+    #stream_audio.download(filename=Folder_name+'.mp3',output_path=Folder_name_path)
+
+def main():
+ 
+    #create the main data folder first
+    data_folder_path_list= init_data_folders()
+    
+    #iterate the excel sheet in the folder
+    for folder_path in data_folder_path_list:
+    
+        if folder_path == 'data_raw/CN_rawdata':
+            excel_file = 'CN list.xlsx'
+        
+        else:
+            excel_file = 'EN list.xlsx'
+    
+        #read the excel 
+        data= pd.read_excel(excel_file)
+
+        print('Start processing',excel_file)
+        
+        #iterate the reference links in the 
+        for i in range(data['Reference Link'].count()):
+            
+            #get the details of the song
+            song_title = data['Song Title'][i]
+            artist = data['Artist'][i]
+            reference_link = data['Reference Link'][i]
+            
+            folder_name,folder_name_path = create_folder(Folder_path= folder_path, Song_title= song_title, Artist= artist)
+            
+            data['Folder Name'][i] = folder_name
+            
+            download_video(Reference_link= reference_link, Folder_name= folder_name, Folder_name_path= folder_name_path)
+            
+        print('End processing ',excel_file)
+        
+        #update the excel
+        save_excel_name= 'new '+excel_file
+        data.to_excel(save_excel_name)
+
+
+if __name__ == '__main__':
+    main()
